@@ -1,5 +1,20 @@
 {
     "name": "@ptahjs/vite-plugin-json",
+    "version": "0.0.1",
+    "author": {
+        "name": "Bobby",
+        "email": "bobofpl@gmail.com",
+        "url": "https://github.com/PtahJs/vite-plugin-json"
+    },
+    "description": "Dynamic JSON Configuration Management for Vite ",
+    "keywords": [
+        "vite json config",
+        "json",
+        "config",
+        "vue3",
+        "dynamic json",
+        "configuration"
+    ],
     "type": "module",
     "main": "dist/index.cjs.js",
     "module": "dist/index.es.js",
@@ -24,5 +39,13 @@
         "oxlint": "0.13.1",
         "vite": "5.4.11"
     },
-    "dependencies": {}
+    "dependencies": {},
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/PtahJs/vite-plugin-json"
+    },
+    "bugs": {
+        "url": "https://github.com/PtahJs/vite-plugin-json/issues"
+    },
+    "homepage": "https://github.com/PtahJs/vite-plugin-json"
 }
