@@ -1,0 +1,28 @@
+{
+    "name": "@ptahjs/vite-plugin-json",
+    "type": "module",
+    "main": "dist/index.cjs.js",
+    "module": "dist/index.es.js",
+    "exports": {
+        "import": "./dist/index.es.js",
+        "require": "./dist/index.cjs.js"
+    },
+    "files": [
+        "dist"
+    ],
+    "scripts": {
+        "build": "vite build"
+    },
+    "devDependencies": {
+        "eslint": "9.15.0",
+        "eslint-config-prettier": "9.1.0",
+        "eslint-plugin-import-x": "4.4.3",
+        "eslint-plugin-prettier": "5.2.1",
+        "eslint-plugin-vue": "9.31.0",
+        "prettier": "3.3.3",
+        "eslint-plugin-oxlint": "0.13.1",
+        "oxlint": "0.13.1",
+        "vite": "5.4.11"
+    },
+    "dependencies": {}
+}
