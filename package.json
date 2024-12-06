@@ -1,11 +1,12 @@
 {
     "name": "@ptahjs/vite-plugin-json",
-    "version": "0.0.2",
+    "version": "0.1.0",
     "author": {
         "name": "Bobby",
         "email": "bobofpl@gmail.com",
         "url": "https://github.com/PtahJs/vite-plugin-json"
     },
+    "license": "MIT",
     "description": "Dynamic JSON Configuration Management for Vite ",
     "keywords": [
         "vite json config",
@@ -29,15 +30,15 @@
         "build": "vite build"
     },
     "devDependencies": {
-        "eslint": "9.15.0",
+        "eslint": "9.16.0",
         "eslint-config-prettier": "9.1.0",
-        "eslint-plugin-import-x": "4.4.3",
+        "eslint-plugin-import-x": "4.5.0",
         "eslint-plugin-prettier": "5.2.1",
-        "eslint-plugin-vue": "9.31.0",
-        "prettier": "3.3.3",
-        "eslint-plugin-oxlint": "0.13.1",
-        "oxlint": "0.13.1",
-        "vite": "5.4.11"
+        "eslint-plugin-vue": "9.32.0",
+        "prettier": "3.4.2",
+        "eslint-plugin-oxlint": "0.14.0",
+        "oxlint": "0.14.1",
+        "vite": "6.0.3"
     },
     "dependencies": {},
     "repository": {

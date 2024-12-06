@@ -61,18 +61,9 @@ export default (options = {}) => {
         load(id) {
             if (id === resolvedVirtualModuleId) {
                 if ($command === 'serve') {
-                    return `export default (callback) => {
-            return callback(${jsonData.toString()});
-          };`;
+                    return `export default callback => callback(${jsonData.toString()});`;
                 } else {
-                    return `export default (callback) => {
-            fetch("./${outputName}")
-              .then((response) => response.json())
-              .then((data) => callback(data))
-               .catch(() => {
-                callback({});
-              });
-          };`;
+                    return `export default callback=>{fetch("./${outputName}").then(response=>response.json()).then(callback).catch(()=>callback({}))};`;
                 }
             }
             return null;
