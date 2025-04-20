@@ -1,5 +1,5 @@
-import fs from 'fs';
-import path from 'path';
+import { readFileSync, existsSync, mkdirSync, writeFileSync } from 'fs';
+import { join } from 'path';
 
 /**
  * JsonConfigPlugin
@@ -18,8 +18,8 @@ export default (options = {}) => {
     // Load JSON data if the `path` option is provided.
     if (options.path) {
         try {
-            const filePath = path.join(process.cwd(), options.path);
-            jsonData = fs.readFileSync(filePath, { encoding: 'utf-8' });
+            const filePath = join(process.cwd(), options.path);
+            jsonData = readFileSync(filePath, { encoding: 'utf-8' });
         } catch (error) {
             console.error('Error reading JSON configuration file:', error);
             jsonData = '{}'; // Fallback to an empty JSON string.
@@ -76,18 +76,18 @@ export default (options = {}) => {
         writeBundle() {
             try {
                 // Ensure the output directory exists, create if necessary.
-                if (!fs.existsSync(outputDirectory)) {
-                    fs.mkdirSync(outputDirectory, { recursive: true });
+                if (!existsSync(outputDirectory)) {
+                    mkdirSync(outputDirectory, { recursive: true });
                 }
 
                 // Write the JSON data to the specified file.
-                fs.writeFileSync(
-                    path.join(outputDirectory, outputName),
+                writeFileSync(
+                    join(outputDirectory, outputName),
                     jsonData.toString(),
                     'utf8'
                 );
                 console.log(
-                    `Configuration file written to ${path.join(outputDirectory, outputName)}`
+                    `Configuration file written to ${join(outputDirectory, outputName)}`
                 );
             } catch (error) {
                 console.error('Error writing configuration file:', error);
