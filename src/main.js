@@ -19,10 +19,10 @@ export default (options = {}) => {
     if (options.path) {
         try {
             const filePath = join(process.cwd(), options.path);
-            jsonData = readFileSync(filePath, { encoding: 'utf-8' });
+            jsonData = JSON.parse(readFileSync(filePath, { encoding: 'utf-8' }));
         } catch (error) {
             console.error('Error reading JSON configuration file:', error);
-            jsonData = '{}'; // Fallback to an empty JSON string.
+            jsonData = {}; // Fallback to an empty JSON string.
         }
     }
 
@@ -61,7 +61,7 @@ export default (options = {}) => {
         load(id) {
             if (id === resolvedVirtualModuleId) {
                 if ($command === 'serve') {
-                    return `export default callback => callback(${jsonData.toString()});`;
+                    return `export default (callback) => callback(${JSON.stringify(jsonData)});`;
                 } else {
                     return `export default callback=>{fetch("./${outputName}").then(response=>response.json()).then(callback).catch(()=>callback({}))};`;
                 }
@@ -74,6 +74,7 @@ export default (options = {}) => {
          * Writes the JSON data to the specified output directory.
          */
         writeBundle() {
+            if ($command !== 'build') return;
             try {
                 // Ensure the output directory exists, create if necessary.
                 if (!existsSync(outputDirectory)) {
