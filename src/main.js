@@ -116,45 +116,10 @@ export default function JsonConfigPlugin(options = {}) {
 
       if (command === "serve") {
         const payload = JSON.stringify(jsonData ?? {});
-        return `
-          // Dev: export JSON object directly
-          export const config = ${payload};
-          export default config;
-
-          // Accept HMR updates for this virtual module
-          if (import.meta.hot) {
-            import.meta.hot.accept(() => {});
-          }
-        `;
+        return `export default (callback) => callback(${payload});`;
       }
-
       // Build: provide an async getter; also export a harmless placeholder object.
-      return `
-        export const config = {};
-        /**
-         * Fetches the emitted JSON config at runtime.
-         * Uses import.meta.env.BASE_URL to support custom base paths.
-         * Returns {} on any failure or in SSR context.
-         */
-        export async function getConfig() {
-          if (typeof window === 'undefined' || typeof fetch === 'undefined') {
-            // SSR or non-browser environment: return {}
-            return {};
-          }
-          const base = (import.meta.env && import.meta.env.BASE_URL) || '/';
-          const url = base.replace(/\\/$/, '') + '/' + ${JSON.stringify(
-            outputName
-          )};
-          try {
-            const res = await fetch(url);
-            if (!res.ok) throw new Error(String(res.status));
-            return await res.json();
-          } catch {
-            return {};
-          }
-        }
-        export default getConfig;
-      `;
+      return `export default callback=>{fetch("./${outputName}").then(response=>response.json()).then(callback).catch(()=>callback({}))};`;
     },
 
     /**
