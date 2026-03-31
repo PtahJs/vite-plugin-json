@@ -1,5 +1,5 @@
 // vite-plugin-json-config.js
-import { readFileSync, existsSync } from "fs";
+import { existsSync, readFileSync } from "fs";
 import { resolve } from "path";
 
 /**
@@ -25,130 +25,152 @@ import { resolve } from "path";
  * @returns {import('vite').Plugin}
  */
 export default function JsonConfigPlugin(options = {}) {
-  const { path: cfgPath, outputName = "JsonConfig.json" } = options;
+    const { path: cfgPath, outputName = "JsonConfig.json" } = options;
 
-  const VIRTUAL_ID = "virtual:JsonConfig";
-  const RESOLVED_VIRTUAL_ID = "\0" + VIRTUAL_ID;
+    const VIRTUAL_ID = "virtual:JsonConfig";
+    const RESOLVED_VIRTUAL_ID = "\0" + VIRTUAL_ID;
 
-  /** @type {'build'|'serve'|null} */
-  let command = null;
-  /** @type {string} */
-  let root = process.cwd();
-  /** @type {any} */
-  let jsonData = {};
-  /** @type {string|null} */
-  let absConfigPath = null;
+    /** @type {'build'|'serve'|null} */
+    let command;
+    /** @type {string} */
+    let root = process.cwd();
+    /** @type {any} */
+    let jsonData = {};
+    /** @type {string|null} */
+    let absConfigPath;
 
-  /**
-   * Load and parse JSON from disk into `jsonData`.
-   * @param {boolean} [silent=false] - suppress warnings
-   */
-  function loadJson(silent = false) {
-    if (!absConfigPath) {
-      jsonData = {};
-      return;
-    }
-    try {
-      if (!existsSync(absConfigPath)) {
-        if (!silent) {
-          console.warn(
-            `[JsonConfig] File not found: ${absConfigPath}. Using {}.`
-          );
+    /**
+     * Load and parse JSON from disk into `jsonData`.
+     * @param {boolean} [silent=false] - suppress warnings
+     */
+    function loadJson(silent = false) {
+        if (!absConfigPath) {
+            jsonData = {};
+            return;
         }
-        jsonData = {};
-        return;
-      }
-      const text = readFileSync(absConfigPath, "utf-8");
-      jsonData = JSON.parse(text);
-    } catch (e) {
-      if (!silent) {
-        console.warn(
-          `[JsonConfig] Failed to read/parse ${absConfigPath}: ${
-            e?.message || e
-          }`
-        );
-      }
-      jsonData = {};
+        try {
+            if (!existsSync(absConfigPath)) {
+                if (!silent) {
+                    console.warn(
+                        `[JsonConfig] File not found: ${absConfigPath}. Using {}.`,
+                    );
+                }
+                jsonData = {};
+                return;
+            }
+            const text = readFileSync(absConfigPath, "utf8");
+            jsonData = JSON.parse(text);
+        } catch (error) {
+            if (!silent) {
+                console.warn(
+                    `[JsonConfig] Failed to read/parse ${absConfigPath}: ${error?.message || error}`,
+                );
+            }
+            jsonData = {};
+        }
     }
-  }
 
-  return {
-    name: "vite-plugin-json-config",
-    enforce: "pre",
+    return {
+        name: "vite-plugin-json-config",
+        enforce: "pre",
 
-    /**
-     * Capture resolved Vite config to determine `command` and `root`.
-     * Compute absolute path to the JSON source and do an initial load.
-     */
-    configResolved(resolved) {
-      command = resolved.command; // 'serve' | 'build'
-      root = resolved.root || root;
-      if (cfgPath) {
-        absConfigPath = resolve(root, cfgPath);
-        loadJson(true);
-      } else {
-        jsonData = {};
-      }
-    },
+        /**
+         * Capture resolved Vite config to determine `command` and `root`.
+         * Compute absolute path to the JSON source and do an initial load.
+         */
+        configResolved(resolved) {
+            command = resolved.command; // 'serve' | 'build'
+            root = resolved.root || root;
+            if (cfgPath) {
+                absConfigPath = resolve(root, cfgPath);
+                loadJson(true);
+            } else {
+                jsonData = {};
+            }
+        },
 
-    /**
-     * Ensure Vite watches the JSON file for changes (dev & build).
-     */
-    buildStart() {
-      if (absConfigPath) this.addWatchFile(absConfigPath);
-    },
+        /**
+         * Ensure Vite watches the JSON file for changes (dev & build).
+         */
+        buildStart() {
+            if (absConfigPath) {
+                this.addWatchFile(absConfigPath);
+            }
+        },
 
-    /**
-     * Map the public virtual ID to an internal resolvable ID.
-     */
-    resolveId(id) {
-      if (id === VIRTUAL_ID) return RESOLVED_VIRTUAL_ID;
-      return null;
-    },
+        /**
+         * Map the public virtual ID to an internal resolvable ID.
+         */
+        resolveId(id) {
+            if (id === VIRTUAL_ID) {
+                return RESOLVED_VIRTUAL_ID;
+            }
+            return;
+        },
 
-    /**
-     * Provide the module source for the virtual module.
-     * - Dev: export the object directly + HMR accept.
-     * - Build: export `getConfig()` fetching the emitted asset with BASE_URL.
-     */
-    load(id) {
-      if (id !== RESOLVED_VIRTUAL_ID) return null;
+        /**
+         * Provide the module source for the virtual module.
+         * - Dev: export the object directly + HMR accept.
+         * - Build: export `getConfig()` fetching the emitted asset with BASE_URL.
+         */
+        load(id) {
+            if (id !== RESOLVED_VIRTUAL_ID) {
+                return;
+            }
 
-      if (command === "serve") {
-        const payload = JSON.stringify(jsonData ?? {});
-        return `export default (callback) => callback(${payload});`;
-      }
-      // Build: provide an async getter; also export a harmless placeholder object.
-      return `export default callback=>{fetch("./${outputName}").then(response=>response.json()).then(callback).catch(()=>callback({}))};`;
-    },
+            if (command === "serve") {
+                const payload = JSON.stringify(jsonData ?? {});
+                return `export default (callback) => callback(${payload});`;
+            }
+            // Build: provide an async getter with caching; also SSR-safe.
+            return `
+                let cache, inflight;
+                export default (cb) => {
+                    if (cache !== undefined) return cb(cache);
+                    if (typeof fetch === "undefined") return cb((cache = {}));
+                    inflight ||= fetch("./${outputName}")
+                        .then((r) => r.json())
+                        .catch(() => ({}))
+                        .then((v) => (cache = v || {}));
 
-    /**
-     * Emit the JSON as an asset in build so it can be fetched at runtime.
-     * Uses Rollup's emitFile to integrate with the asset pipeline.
-     */
-    generateBundle() {
-      if (command !== "build") return;
-      // Reload once more to ensure latest content is emitted.
-      if (absConfigPath) loadJson(true);
+                    inflight.then(cb);
+                };`;
+        },
 
-      this.emitFile({
-        type: "asset",
-        fileName: outputName,
-        source: JSON.stringify(jsonData ?? {}, null, 2),
-      });
-    },
+        /**
+         * Emit the JSON as an asset in build so it can be fetched at runtime.
+         * Uses Rollup's emitFile to integrate with the asset pipeline.
+         */
+        generateBundle() {
+            if (command !== "build") {
+                return;
+            }
+            // Reload once more to ensure latest content is emitted.
+            if (absConfigPath) {
+                loadJson(true);
+            }
 
-    /**
-     * HMR: when the JSON source changes, reload and invalidate the virtual module.
-     */
-    handleHotUpdate(ctx) {
-      if (!absConfigPath || ctx.file !== absConfigPath) return;
-      loadJson();
-      const mod = ctx.server.moduleGraph.getModuleById(RESOLVED_VIRTUAL_ID);
-      if (mod) {
-        ctx.server.moduleGraph.invalidateModule(mod);
-        return [mod];
-      }
-    },
-  };
+            this.emitFile({
+                fileName: outputName,
+                source: JSON.stringify(jsonData ?? {}, undefined, 2),
+                type: "asset",
+            });
+        },
+
+        /**
+         * HMR: when the JSON source changes, reload and invalidate the virtual module.
+         */
+        handleHotUpdate(ctx) {
+            if (!absConfigPath || ctx.file !== absConfigPath) {
+                return;
+            }
+            loadJson();
+            const mod =
+                ctx.server.moduleGraph.getModuleById(RESOLVED_VIRTUAL_ID);
+            if (mod) {
+                ctx.server.moduleGraph.invalidateModule(mod);
+                return [mod];
+            }
+        },
+    };
 }

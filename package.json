@@ -1,6 +1,6 @@
 {
     "name": "@ptahjs/vite-plugin-json",
-    "version": "0.1.5",
+    "version": "0.1.6",
     "author": {
         "name": "Bobby",
         "email": "bobofpl@gmail.com",
@@ -30,7 +30,7 @@
         "build": "vite build"
     },
     "devDependencies": {
-        "vite": "7.1.4"
+        "vite": "8.0.3"
     },
     "dependencies": {},
     "repository": {
